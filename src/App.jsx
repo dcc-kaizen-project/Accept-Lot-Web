@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import SignatureCanvas from 'react-signature-canvas';
-import { BrowserRouter as Router, Routes, Route, useSearchParams } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, useSearchParams } from 'react-router-dom';
 
 // ==================== 1. หน้าสำหรับผู้ร้องขอ (หน้าแรก) ====================
 function RequestForm() {
@@ -167,10 +167,10 @@ function RequestForm() {
 // ==================== 2. หน้าสำหรับผู้ทบทวน (Review Page) ====================
 function ReviewPage() {
   const [searchParams] = useSearchParams();
-  const docId = searchParams.get('doc'); // ดึงเลขที่เอกสารจากลิงก์ เช่น FCB-2026-001
+  const docId = searchParams.get('doc');
   
   const reviewSigCanvas = useRef({});
-  const [actionType, setActionType] = useState('approve'); // approve หรือ reject
+  const [actionType, setActionType] = useState('approve');
   const [rejectReason, setRejectReason] = useState('');
   const [reviewerName, setReviewerName] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -252,7 +252,7 @@ function ReviewPage() {
   );
 }
 
-// ==================== 3. ตัวจัดการเส้นทางหลัก (Router) ====================
+// ==================== 3. ตัวจัดการเส้นทางหลัก (HashRouter) ====================
 export default function App() {
   return (
     <Router>
