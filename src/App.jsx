@@ -185,7 +185,7 @@ function ReviewPage() {
     if (!docId) return;
 
     // ⚠️ นำ URL ของ Web App (Google Script) มาใส่ตรงนี้เพื่อให้หน้าเว็บดึงข้อมูลได้
-    const GOOGLE_SCRIPT_URL = "ใส่_URL_WEB_APP_ของ_GOOGLE_SCRIPT_ตรงนี้";
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxo8oo-JRvHx7CVSrBgSPxA4YAY0v_QtgTpW5psEV8E71PZ6_x0oIKVmHs14S-yw_fLYw/exec";
     
     fetch(`${GOOGLE_SCRIPT_URL}?doc=${docId}`)
       .then(res => res.json())
