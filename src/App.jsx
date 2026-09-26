@@ -1,7 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import SignatureCanvas from 'react-signature-canvas';
+import { BrowserRouter as Router, Routes, Route, useSearchParams } from 'react-router-dom';
 
-function App() {
+// ==================== 1. หน้าสำหรับผู้ร้องขอ (หน้าแรก) ====================
+function RequestForm() {
   const [formData, setFormData] = useState({
     plant: 'FCB', productName: '', quantity: '', lotNumber: '',
     department: '', rejectionReason: '', purpose: '', issues: '', requesterName: ''
@@ -17,7 +19,7 @@ function App() {
 
   const handlePreview = (e) => {
     e.preventDefault();
-    if (sigCanvas.current.isEmpty && sigCanvas.current.isEmpty()) {
+    if (sigCanvas.current.isEmpty()) {
       alert('⚠️ กรุณาลงลายเซ็นผู้ร้องขอก่อนส่งเอกสาร');
       return;
     }
@@ -47,10 +49,6 @@ function App() {
         setTicketResult(result);
         setFormData({ plant: 'FCB', productName: '', quantity: '', lotNumber: '', department: '', rejectionReason: '', purpose: '', issues: '', requesterName: '' });
         clearSignature();
-        // แจ้งเตือน Error จาก LINE (ถ้ามี)
-        if (result.lineStatus && !result.lineStatus.includes("{}")) {
-           console.log("LINE Debug:", result.lineStatus);
-        }
       } else {
         alert(`เกิดข้อผิดพลาด: ${result.error}`);
       }
@@ -83,7 +81,6 @@ function App() {
         .signature-wrapper { background: rgba(255, 255, 255, 0.95); border-radius: 10px; overflow: hidden; margin-top: 5px; }
         .btn-clear { background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255,255,255,0.2); color: #e2e8f0; padding: 8px 16px; border-radius: 6px; cursor: pointer; margin-top: 10px; }
         .submit-btn { width: 100%; padding: 16px; background: linear-gradient(to right, #0ea5e9, #2563eb); color: white; border: none; border-radius: 10px; font-size: 18px; font-weight: 600; cursor: pointer; margin-top: 20px; font-family: 'Prompt'; }
-        
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); display: flex; justify-content: center; align-items: center; z-index: 1000; padding: 20px; }
         .modal-content { background: #fff; color: #1e293b; padding: 30px; border-radius: 16px; max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
         .modal-content h3 { margin-top: 0; color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
@@ -92,7 +89,6 @@ function App() {
         .modal-actions { display: flex; gap: 15px; margin-top: 25px; }
         .btn-cancel { flex: 1; padding: 12px; background: #e2e8f0; color: #475569; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-family: 'Prompt'; }
         .btn-confirm { flex: 2; padding: 12px; background: #10b981; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-family: 'Prompt'; }
-        
         .success-panel { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16,185,129,0.3); border-radius: 12px; padding: 30px; text-align: center; margin-bottom: 30px; }
         .doc-no { font-size: 36px; font-weight: 700; color: #fff; margin: 15px 0 20px 0; }
         .status-box { background: rgba(251, 191, 36, 0.15); border: 1px solid rgba(251, 191, 36, 0.3); padding: 15px; border-radius: 8px; color: #fbbf24; font-size: 15px; font-weight: 500; }
@@ -120,19 +116,14 @@ function App() {
       )}
 
       <div className="glass-panel">
-        <div className="header">
-          <h1>📝 แบบขอยอมรับผลิตภัณฑ์</h1>
-        </div>
+        <div className="header"><h1>📝 แบบขอยอมรับผลิตภัณฑ์</h1></div>
 
         {ticketResult && (
           <div className="success-panel">
             <h2 style={{ color: '#34d399', margin: '0 0 10px 0' }}>✨ ส่งคำขอสำเร็จ!</h2>
             <p style={{ color: '#cbd5e1' }}>เลขที่เอกสารของคุณคือ</p>
             <div className="doc-no">{ticketResult.documentNumber}</div>
-            <div className="status-box">
-              ⏳ ระบบส่งแจ้งเตือนให้ ผช.ผจก. ทบทวนผ่าน LINE แล้ว<br/>
-              <span style={{fontSize: '13px', color: '#94a3b8'}}>(ไฟล์ PDF จะถูกสร้างเมื่อ ผจก.โรงงาน อนุมัติขั้นสุดท้าย)</span>
-            </div>
+            <div className="status-box">⏳ ส่งแจ้งเตือนให้ ผช.ผจก. ทบทวนผ่าน LINE สำเร็จแล้ว</div>
           </div>
         )}
 
@@ -173,4 +164,102 @@ function App() {
   );
 }
 
-export default App;
+// ==================== 2. หน้าสำหรับผู้ทบทวน (Review Page) ====================
+function ReviewPage() {
+  const [searchParams] = useSearchParams();
+  const docId = searchParams.get('doc'); // ดึงเลขที่เอกสารจากลิงก์ เช่น FCB-2026-001
+  
+  const reviewSigCanvas = useRef({});
+  const [actionType, setActionType] = useState('approve'); // approve หรือ reject
+  const [rejectReason, setRejectReason] = useState('');
+  const [reviewerName, setReviewerName] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmitReview = async (e) => {
+    e.preventDefault();
+    if (actionType === 'approve' && reviewSigCanvas.current.isEmpty()) {
+      alert('⚠️ กรุณาลงลายเซ็นก่อนอนุมัติ');
+      return;
+    }
+    
+    setSubmitting(true);
+    alert(`บันทึกผลการทบทวนเอกสาร ${docId} เรียบร้อยแล้ว!`);
+    setSubmitting(false);
+  };
+
+  return (
+    <div className="app-wrapper">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
+        body { margin: 0; padding: 0; font-family: 'Prompt', sans-serif; background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); color: #e2e8f0; min-height: 100vh; }
+        .app-wrapper { display: flex; justify-content: center; align-items: center; padding: 40px 20px; min-height: 100vh; box-sizing: border-box; }
+        .glass-panel { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 25px 45px rgba(0,0,0,0.2); border-radius: 20px; padding: 40px; max-width: 700px; width: 100%; }
+        .header { text-align: center; margin-bottom: 25px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; }
+        .header h1 { font-size: 24px; color: #fff; margin: 0; }
+        .doc-badge { background: #38bdf8; color: #0f172a; padding: 6px 14px; border-radius: 20px; font-weight: 700; display: inline-block; margin-bottom: 20px; }
+        .form-group { margin-bottom: 20px; display: flex; flex-direction: column; }
+        label { font-size: 14px; color: #cbd5e1; margin-bottom: 8px; }
+        .input-control { background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); color: #fff; padding: 12px; border-radius: 8px; font-family: 'Prompt'; }
+        .action-btns { display: flex; gap: 15px; margin-bottom: 20px; }
+        .btn-approve { flex: 1; padding: 14px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; font-family: 'Prompt'; background: ${actionType === 'approve' ? '#10b981' : 'rgba(255,255,255,0.1)'}; color: white; }
+        .btn-reject { flex: 1; padding: 14px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; font-family: 'Prompt'; background: ${actionType === 'reject' ? '#ef4444' : 'rgba(255,255,255,0.1)'}; color: white; }
+        .signature-wrapper { background: white; border-radius: 8px; overflow: hidden; }
+        .submit-btn { width: 100%; padding: 16px; background: #2563eb; color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; font-family: 'Prompt'; }
+      `}</style>
+      
+      <div className="glass-panel">
+        <div className="header">
+          <h1>📋 ระบบทบทวนและอนุมัติคำขอ</h1>
+        </div>
+        
+        <div style={{ textAlign: 'center' }}>
+          <div className="doc-badge">📄 เลขที่เอกสาร: {docId || 'ไม่พบรหัสเอกสาร'}</div>
+        </div>
+
+        <form onSubmit={handleSubmitReview}>
+          <div className="form-group">
+            <label>👤 ชื่อ-นามสกุล (ผู้ทบทวน / ผช.ผจก.) *</label>
+            <input type="text" value={reviewerName} onChange={(e) => setReviewerName(e.target.value)} required className="input-control" placeholder="ระบุชื่อของคุณ" />
+          </div>
+
+          <label>📌 ผลการพิจารณา *</label>
+          <div className="action-btns">
+            <button type="button" className="btn-approve" onClick={() => setActionType('approve')}>✅ อนุมัติ (Approve)</button>
+            <button type="button" className="btn-reject" onClick={() => setActionType('reject')}>❌ ไม่อนุมัติ (Reject)</button>
+          </div>
+
+          {actionType === 'approve' ? (
+            <div className="form-group">
+              <label>✍️ ลงลายเซ็นผู้ทบทวน *</label>
+              <div className="signature-wrapper">
+                <SignatureCanvas ref={reviewSigCanvas} penColor="#0f172a" canvasProps={{ width: 620, height: 180, style: { width: '100%', height: '180px' } }} />
+              </div>
+              <button type="button" onClick={() => reviewSigCanvas.current.clear()} style={{ background: 'transparent', border: 'none', color: '#38bdf8', cursor: 'pointer', marginTop: '5px', textAlign: 'left' }}>↺ ล้างลายเซ็น</button>
+            </div>
+          ) : (
+            <div className="form-group">
+              <label>🚫 ระบุเหตุผลที่ไม่อนุมัติ *</label>
+              <textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} required className="input-control" placeholder="กรุณาระบุเหตุผล..." style={{ minHeight: '100px' }}></textarea>
+            </div>
+          )}
+
+          <button type="submit" disabled={submitting} className="submit-btn">
+            {submitting ? 'กำลังบันทึก...' : '📤 ส่งผลการพิจารณา'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ==================== 3. ตัวจัดการเส้นทางหลัก (Router) ====================
+export default function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<RequestForm />} />
+        <Route path="/review" element={<ReviewPage />} />
+      </Routes>
+    </Router>
+  );
+}
