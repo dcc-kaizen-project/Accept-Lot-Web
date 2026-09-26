@@ -344,7 +344,7 @@ function App() {
 
           <div className="form-row">
             <div className="form-group" style={{ flex: 2 }}>
-              <label>📦 ชื่อผลิตภัณฑ์ *</label>
+              <label>📦 ชื่อผลิตภัณฑ์และขนาด *</label>
               <input type="text" name="productName" value={formData.productName} onChange={handleChange} required className="input-control" placeholder="ระบุชื่อผลิตภัณฑ์" />
             </div>
             <div className="form-group" style={{ flex: 1 }}>
