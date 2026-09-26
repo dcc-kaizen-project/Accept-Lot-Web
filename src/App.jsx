@@ -10,29 +10,20 @@ function App() {
   const sigCanvas = useRef({});
   const [loading, setLoading] = useState(false);
   const [ticketResult, setTicketResult] = useState(null);
-  
-  // สร้าง State สำหรับเปิด/ปิดหน้าต่าง Preview
   const [showPreview, setShowPreview] = useState(false);
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+  const clearSignature = () => { if (sigCanvas.current) sigCanvas.current.clear(); };
 
-  const clearSignature = () => {
-    if (sigCanvas.current && sigCanvas.current.clear) sigCanvas.current.clear();
-  };
-
-  // ปุ่มกดครั้งแรก (ให้แสดง Preview)
   const handlePreview = (e) => {
     e.preventDefault();
     if (sigCanvas.current.isEmpty && sigCanvas.current.isEmpty()) {
       alert('⚠️ กรุณาลงลายเซ็นผู้ร้องขอก่อนส่งเอกสาร');
       return;
     }
-    setShowPreview(true); // เปิดหน้าต่างพรีวิว
+    setShowPreview(true);
   };
 
-  // ปุ่มกดยืนยัน (ส่งข้อมูลจริง)
   const confirmAndSend = async () => {
     setShowPreview(false);
     setLoading(true);
@@ -56,6 +47,10 @@ function App() {
         setTicketResult(result);
         setFormData({ plant: 'FCB', productName: '', quantity: '', lotNumber: '', department: '', rejectionReason: '', purpose: '', issues: '', requesterName: '' });
         clearSignature();
+        // แจ้งเตือน Error จาก LINE (ถ้ามี)
+        if (result.lineStatus && !result.lineStatus.includes("{}")) {
+           console.log("LINE Debug:", result.lineStatus);
+        }
       } else {
         alert(`เกิดข้อผิดพลาด: ${result.error}`);
       }
@@ -70,7 +65,6 @@ function App() {
     <div className="app-wrapper">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
-        
         body { margin: 0; padding: 0; font-family: 'Prompt', sans-serif; background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); color: #e2e8f0; min-height: 100vh; }
         .app-wrapper { display: flex; justify-content: center; align-items: center; padding: 40px 20px; min-height: 100vh; box-sizing: border-box; }
         .glass-panel { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 25px 45px rgba(0,0,0,0.2); border-radius: 20px; padding: 40px; max-width: 800px; width: 100%; box-sizing: border-box; }
@@ -88,10 +82,8 @@ function App() {
         .radio-btn input:checked + .radio-label { background: rgba(56, 189, 248, 0.15); border-color: #38bdf8; color: #38bdf8; }
         .signature-wrapper { background: rgba(255, 255, 255, 0.95); border-radius: 10px; overflow: hidden; margin-top: 5px; }
         .btn-clear { background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255,255,255,0.2); color: #e2e8f0; padding: 8px 16px; border-radius: 6px; cursor: pointer; margin-top: 10px; }
-        
         .submit-btn { width: 100%; padding: 16px; background: linear-gradient(to right, #0ea5e9, #2563eb); color: white; border: none; border-radius: 10px; font-size: 18px; font-weight: 600; cursor: pointer; margin-top: 20px; font-family: 'Prompt'; }
         
-        /* สไตล์ของหน้าต่าง Preview */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); display: flex; justify-content: center; align-items: center; z-index: 1000; padding: 20px; }
         .modal-content { background: #fff; color: #1e293b; padding: 30px; border-radius: 16px; max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
         .modal-content h3 { margin-top: 0; color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
@@ -102,11 +94,10 @@ function App() {
         .btn-confirm { flex: 2; padding: 12px; background: #10b981; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-family: 'Prompt'; }
         
         .success-panel { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16,185,129,0.3); border-radius: 12px; padding: 30px; text-align: center; margin-bottom: 30px; }
-        .doc-no { font-size: 36px; font-weight: 700; color: #fff; margin: 15px 0 25px 0; }
-        .download-btn { display: inline-block; padding: 12px 28px; background: #ef4444; color: white; text-decoration: none; border-radius: 8px; }
+        .doc-no { font-size: 36px; font-weight: 700; color: #fff; margin: 15px 0 20px 0; }
+        .status-box { background: rgba(251, 191, 36, 0.15); border: 1px solid rgba(251, 191, 36, 0.3); padding: 15px; border-radius: 8px; color: #fbbf24; font-size: 15px; font-weight: 500; }
       `}</style>
 
-      {/* 🟢 หน้าต่าง Modal สำหรับ Preview */}
       {showPreview && (
         <div className="modal-overlay">
           <div className="modal-content">
@@ -121,8 +112,8 @@ function App() {
             <div className="preview-item"><strong>ชื่อผู้ร้องขอ:</strong> {formData.requesterName}</div>
             
             <div className="modal-actions">
-              <button className="btn-cancel" onClick={() => setShowPreview(false)}>กลับไปแก้ไข</button>
-              <button className="btn-confirm" onClick={confirmAndSend}>✅ ยืนยันและส่งข้อมูล</button>
+              <button type="button" className="btn-cancel" onClick={() => setShowPreview(false)}>กลับไปแก้ไข</button>
+              <button type="button" className="btn-confirm" onClick={confirmAndSend}>✅ ยืนยันและส่งข้อมูล</button>
             </div>
           </div>
         </div>
@@ -135,11 +126,13 @@ function App() {
 
         {ticketResult && (
           <div className="success-panel">
-            <h2 style={{ color: '#34d399', margin: '0 0 10px 0' }}>✨ สร้างเอกสารสำเร็จ!</h2>
+            <h2 style={{ color: '#34d399', margin: '0 0 10px 0' }}>✨ ส่งคำขอสำเร็จ!</h2>
+            <p style={{ color: '#cbd5e1' }}>เลขที่เอกสารของคุณคือ</p>
             <div className="doc-no">{ticketResult.documentNumber}</div>
-            {ticketResult.pdfUrl && (
-               <a href={ticketResult.pdfUrl} target="_blank" rel="noreferrer" className="download-btn">📥 ดาวน์โหลด PDF</a>
-            )}
+            <div className="status-box">
+              ⏳ ระบบส่งแจ้งเตือนให้ ผช.ผจก. ทบทวนผ่าน LINE แล้ว<br/>
+              <span style={{fontSize: '13px', color: '#94a3b8'}}>(ไฟล์ PDF จะถูกสร้างเมื่อ ผจก.โรงงาน อนุมัติขั้นสุดท้าย)</span>
+            </div>
           </div>
         )}
 
@@ -147,70 +140,33 @@ function App() {
           <div className="form-group" style={{ marginBottom: '20px' }}>
             <label>🏭 สายการผลิต (Plant) *</label>
             <div className="radio-container">
-              <div className="radio-btn">
-                <input type="radio" id="plantFCB" name="plant" value="FCB" checked={formData.plant === 'FCB'} onChange={handleChange} />
-                <label htmlFor="plantFCB" className="radio-label">🏭 FCB</label>
-              </div>
-              <div className="radio-btn">
-                <input type="radio" id="plantCRT" name="plant" value="CRT" checked={formData.plant === 'CRT'} onChange={handleChange} />
-                <label htmlFor="plantCRT" className="radio-label">🏠 CRT</label>
-              </div>
+              <div className="radio-btn"><input type="radio" id="plantFCB" name="plant" value="FCB" checked={formData.plant === 'FCB'} onChange={handleChange} /><label htmlFor="plantFCB" className="radio-label">🏭 FCB</label></div>
+              <div className="radio-btn"><input type="radio" id="plantCRT" name="plant" value="CRT" checked={formData.plant === 'CRT'} onChange={handleChange} /><label htmlFor="plantCRT" className="radio-label">🏠 CRT</label></div>
             </div>
           </div>
 
           <div className="form-row">
-            <div className="form-group" style={{ flex: 2 }}>
-              <label>📦 ชื่อผลิตภัณฑ์ *</label>
-              <input type="text" name="productName" value={formData.productName} onChange={handleChange} required className="input-control" />
-            </div>
-            <div className="form-group" style={{ flex: 1 }}>
-              <label>📊 จำนวน (แผ่น/ชิ้น) *</label>
-              <input type="number" name="quantity" value={formData.quantity} onChange={handleChange} required className="input-control" />
-            </div>
+            <div className="form-group" style={{ flex: 2 }}><label>📦 ชื่อผลิตภัณฑ์ *</label><input type="text" name="productName" value={formData.productName} onChange={handleChange} required className="input-control" /></div>
+            <div className="form-group" style={{ flex: 1 }}><label>📊 จำนวน (แผ่น/ชิ้น) *</label><input type="number" name="quantity" value={formData.quantity} onChange={handleChange} required className="input-control" /></div>
           </div>
 
           <div className="form-row">
-            <div className="form-group">
-              <label>🔢 รหัสผลิต (Lot) *</label>
-              <input type="text" name="lotNumber" value={formData.lotNumber} onChange={handleChange} required className="input-control" />
-            </div>
-            <div className="form-group">
-              <label>🏢 หน่วยงานที่ร้องขอ *</label>
-              <input type="text" name="department" value={formData.department} onChange={handleChange} required className="input-control" />
-            </div>
+            <div className="form-group"><label>🔢 รหัสผลิต (Lot) *</label><input type="text" name="lotNumber" value={formData.lotNumber} onChange={handleChange} required className="input-control" /></div>
+            <div className="form-group"><label>🏢 หน่วยงานที่ร้องขอ *</label><input type="text" name="department" value={formData.department} onChange={handleChange} required className="input-control" /></div>
           </div>
 
-          <div className="form-group" style={{ marginBottom: '20px' }}>
-            <label>🚫 เหตุผลในการปฏิเสธลอต *</label>
-            <textarea name="rejectionReason" value={formData.rejectionReason} onChange={handleChange} required className="input-control"></textarea>
-          </div>
-
-          <div className="form-group" style={{ marginBottom: '20px' }}>
-            <label>🎯 รายละเอียดในการร้องขอ (วัตถุประสงค์) *</label>
-            <textarea name="purpose" value={formData.purpose} onChange={handleChange} required className="input-control"></textarea>
-          </div>
-
-          <div className="form-group" style={{ marginBottom: '20px' }}>
-            <label>⚠️ หัวข้อในการร้องขอ *</label>
-            <textarea name="issues" value={formData.issues} onChange={handleChange} required className="input-control" style={{ minHeight: '80px' }}></textarea>
-          </div>
-
-          <div className="form-group" style={{ marginBottom: '25px' }}>
-            <label>👤 ชื่อ-นามสกุล ผู้ร้องขอ *</label>
-            <input type="text" name="requesterName" value={formData.requesterName} onChange={handleChange} required className="input-control" />
-          </div>
+          <div className="form-group" style={{ marginBottom: '20px' }}><label>🚫 เหตุผลในการปฏิเสธลอต *</label><textarea name="rejectionReason" value={formData.rejectionReason} onChange={handleChange} required className="input-control"></textarea></div>
+          <div className="form-group" style={{ marginBottom: '20px' }}><label>🎯 รายละเอียดในการร้องขอ (วัตถุประสงค์) *</label><textarea name="purpose" value={formData.purpose} onChange={handleChange} required className="input-control"></textarea></div>
+          <div className="form-group" style={{ marginBottom: '20px' }}><label>⚠️ หัวข้อในการร้องขอ *</label><textarea name="issues" value={formData.issues} onChange={handleChange} required className="input-control" style={{ minHeight: '80px' }}></textarea></div>
+          <div className="form-group" style={{ marginBottom: '25px' }}><label>👤 ชื่อ-นามสกุล ผู้ร้องขอ *</label><input type="text" name="requesterName" value={formData.requesterName} onChange={handleChange} required className="input-control" /></div>
 
           <div className="form-group">
             <label>✍️ ลายเซ็นผู้ร้องขอ *</label>
-            <div className="signature-wrapper">
-              <SignatureCanvas ref={sigCanvas} penColor="#0f172a" canvasProps={{ width: 800, height: 200, style: { width: '100%', height: '200px' } }} />
-            </div>
+            <div className="signature-wrapper"><SignatureCanvas ref={sigCanvas} penColor="#0f172a" canvasProps={{ width: 800, height: 200, style: { width: '100%', height: '200px' } }} /></div>
             <button type="button" onClick={clearSignature} className="btn-clear">↺ ล้างลายเซ็น</button>
           </div>
 
-          <button type="submit" disabled={loading} className="submit-btn">
-            {loading ? 'กำลังประมวลผล...' : 'กดเพื่อตรวจสอบข้อมูล (Preview)'}
-          </button>
+          <button type="submit" disabled={loading} className="submit-btn">{loading ? 'กำลังประมวลผล...' : 'กดเพื่อตรวจสอบข้อมูล (Preview)'}</button>
         </form>
       </div>
     </div>
