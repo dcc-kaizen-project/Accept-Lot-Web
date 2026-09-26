@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import SignatureCanvas from 'react-signature-canvas';
 import { HashRouter as Router, Routes, Route, useSearchParams } from 'react-router-dom';
 
@@ -37,10 +37,11 @@ function RequestForm() {
     };
 
     try {
-      const BACKEND_URL = 'https://accept-lot-backend.onrender.com/api/concessions';
-      const response = await fetch(BACKEND_URL, {
+      // ⚠️ นำ URL ของ Web App (Google Script) มาใส่ตรงนี้เพื่อให้หน้าฟอร์มส่งข้อมูลได้
+      const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwRDKf3_9xV2JfNDqnPrADElyDR3uJW18wIXx4rKFmPJt57l4mmyFyWp9Uz6cS_lPQR/exec";
+      
+      const response = await fetch(GOOGLE_SCRIPT_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
       const result = await response.json();
@@ -175,13 +176,37 @@ function ReviewPage() {
   const [reviewerName, setReviewerName] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  // ตัวแปรสำหรับเก็บข้อมูลที่ดึงมาโชว์
+  const [docData, setDocData] = useState(null);
+  const [loadingData, setLoadingData] = useState(true);
+
+  // ดึงข้อมูลเมื่อโหลดหน้าเว็บ
+  useEffect(() => {
+    if (!docId) return;
+
+    // ⚠️ นำ URL ของ Web App (Google Script) มาใส่ตรงนี้เพื่อให้หน้าเว็บดึงข้อมูลได้
+    const GOOGLE_SCRIPT_URL = "ใส่_URL_WEB_APP_ของ_GOOGLE_SCRIPT_ตรงนี้";
+    
+    fetch(`${GOOGLE_SCRIPT_URL}?doc=${docId}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setDocData(data.data);
+        }
+        setLoadingData(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setLoadingData(false);
+      });
+  }, [docId]);
+
   const handleSubmitReview = async (e) => {
     e.preventDefault();
     if (actionType === 'approve' && reviewSigCanvas.current.isEmpty()) {
       alert('⚠️ กรุณาลงลายเซ็นก่อนอนุมัติ');
       return;
     }
-    
     setSubmitting(true);
     alert(`บันทึกผลการทบทวนเอกสาร ${docId} เรียบร้อยแล้ว!`);
     setSubmitting(false);
@@ -197,6 +222,15 @@ function ReviewPage() {
         .header { text-align: center; margin-bottom: 25px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; }
         .header h1 { font-size: 24px; color: #fff; margin: 0; }
         .doc-badge { background: #38bdf8; color: #0f172a; padding: 6px 14px; border-radius: 20px; font-weight: 700; display: inline-block; margin-bottom: 20px; }
+        
+        /* สไตล์สำหรับกล่องแสดงข้อมูลเอกสาร */
+        .info-card { background: rgba(0,0,0,0.2); border-radius: 12px; padding: 20px; margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.05); }
+        .info-row { display: flex; margin-bottom: 10px; border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 8px; }
+        .info-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .info-label { width: 140px; color: #94a3b8; font-weight: 500; font-size: 14px; }
+        .info-value { flex: 1; color: #fff; font-size: 15px; }
+        .loading-text { text-align: center; color: #94a3b8; padding: 20px; font-size: 16px; }
+
         .form-group { margin-bottom: 20px; display: flex; flex-direction: column; }
         label { font-size: 14px; color: #cbd5e1; margin-bottom: 8px; }
         .input-control { background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); color: #fff; padding: 12px; border-radius: 8px; font-family: 'Prompt'; }
@@ -215,6 +249,23 @@ function ReviewPage() {
         <div style={{ textAlign: 'center' }}>
           <div className="doc-badge">📄 เลขที่เอกสาร: {docId || 'ไม่พบรหัสเอกสาร'}</div>
         </div>
+
+        {/* ================= กรอบแสดงข้อมูลเอกสาร ================= */}
+        {loadingData ? (
+          <div className="loading-text">⏳ กำลังดึงข้อมูลเอกสาร...</div>
+        ) : docData ? (
+          <div className="info-card">
+            <div className="info-row"><div className="info-label">ผลิตภัณฑ์:</div><div className="info-value">{docData.productName}</div></div>
+            <div className="info-row"><div className="info-label">Lot Number:</div><div className="info-value">{docData.lotNumber}</div></div>
+            <div className="info-row"><div className="info-label">จำนวน:</div><div className="info-value">{docData.quantity} ชิ้น/แผ่น</div></div>
+            <div className="info-row"><div className="info-label">ผู้ร้องขอ/หน่วยงาน:</div><div className="info-value">{docData.requester}</div></div>
+            <div className="info-row"><div className="info-label">เหตุผลที่ปฏิเสธ:</div><div className="info-value" style={{ color: '#fbbf24' }}>{docData.rejectionReason}</div></div>
+            <div className="info-row"><div className="info-label">วัตถุประสงค์:</div><div className="info-value">{docData.purpose}</div></div>
+          </div>
+        ) : (
+          <div className="info-card" style={{ textAlign: 'center', color: '#ef4444' }}>❌ ไม่พบข้อมูลเอกสารในระบบ หรือดึงข้อมูลล้มเหลว</div>
+        )}
+        {/* ======================================================= */}
 
         <form onSubmit={handleSubmitReview}>
           <div className="form-group">
@@ -243,7 +294,7 @@ function ReviewPage() {
             </div>
           )}
 
-          <button type="submit" disabled={submitting} className="submit-btn">
+          <button type="submit" disabled={submitting || loadingData} className="submit-btn">
             {submitting ? 'กำลังบันทึก...' : '📤 ส่งผลการพิจารณา'}
           </button>
         </form>
