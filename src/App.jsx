@@ -5,10 +5,9 @@ function App() {
   const [formData, setFormData] = useState({
     plant: 'FCB',
     productName: '',
-    productSize: '',
+    quantity: '',
     lotNumber: '',
     department: '',
-    quantity: '',
     rejectionReason: '',
     purpose: '',
     issues: '',
@@ -28,7 +27,7 @@ function App() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (sigCanvas.current.isEmpty && sigCanvas.current.isEmpty()) {
-      alert('⚠️ กรุณาลงลายเซ็นผู้ร้องขอก่อนส่งเอกสารครับ');
+      alert('⚠️ กรุณาลงลายเซ็นผู้ร้องขอก่อนส่งเอกสาร');
       return;
     }
     setLoading(true);
@@ -50,7 +49,7 @@ function App() {
       
       if (result.success) {
         setTicketResult(result);
-        setFormData({ plant: 'FCB', productName: '', productSize: '', lotNumber: '', department: '', quantity: '', rejectionReason: '', purpose: '', issues: '', requesterName: '' });
+        setFormData({ plant: 'FCB', productName: '', quantity: '', lotNumber: '', department: '', rejectionReason: '', purpose: '', issues: '', requesterName: '' });
         clearSignature();
       } else {
         alert(`เกิดข้อผิดพลาด: ${result.error}`);
@@ -63,311 +62,346 @@ function App() {
   };
 
   return (
-    <div className="app-container">
-      {/* ฝัง CSS ไว้ใน Component โดยตรงเพื่อให้ก็อปปี้ไปวางแล้วสวยเลย */}
+    <div className="app-wrapper">
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
+        
         body {
-          background-color: #f3f4f6;
-          font-family: 'Segoe UI', 'Sarabun', Tahoma, Geneva, Verdana, sans-serif;
           margin: 0;
           padding: 0;
-        }
-        .app-container {
+          font-family: 'Prompt', sans-serif;
+          background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+          color: #e2e8f0;
           min-height: 100vh;
-          padding: 40px 20px;
+        }
+        
+        .app-wrapper {
           display: flex;
           justify-content: center;
-        }
-        .form-card {
-          background: #ffffff;
-          max-width: 700px;
-          width: 100%;
-          border-radius: 16px;
-          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-          padding: 40px;
+          align-items: center;
+          padding: 40px 20px;
+          min-height: 100vh;
           box-sizing: border-box;
         }
+
+        .glass-panel {
+          background: rgba(255, 255, 255, 0.05);
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          box-shadow: 0 25px 45px rgba(0, 0, 0, 0.2);
+          border-radius: 20px;
+          padding: 40px;
+          max-width: 800px;
+          width: 100%;
+          box-sizing: border-box;
+        }
+
         .header {
           text-align: center;
-          margin-bottom: 30px;
+          margin-bottom: 35px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+          padding-bottom: 20px;
         }
-        .header h2 {
-          color: #1e293b;
-          font-size: 24px;
-          margin-bottom: 8px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 10px;
+
+        .header h1 {
+          font-size: 28px;
+          color: #fff;
+          margin: 0 0 10px 0;
+          letter-spacing: 0.5px;
+          text-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
+
         .header p {
-          color: #64748b;
-          font-size: 15px;
+          color: #94a3b8;
+          font-size: 14px;
           margin: 0;
         }
-        .form-group {
-          margin-bottom: 20px;
-        }
+
         .form-row {
           display: flex;
-          gap: 15px;
+          gap: 20px;
           margin-bottom: 20px;
         }
-        .form-row .form-group {
-          margin-bottom: 0;
+
+        .form-group {
           flex: 1;
+          display: flex;
+          flex-direction: column;
         }
+
         label {
-          display: block;
-          font-weight: 600;
-          color: #334155;
+          font-size: 14px;
+          font-weight: 500;
+          color: #cbd5e1;
           margin-bottom: 8px;
-          font-size: 14.5px;
+          letter-spacing: 0.5px;
         }
-        .input-field {
-          width: 100%;
-          padding: 12px 16px;
-          border: 1.5px solid #cbd5e1;
-          border-radius: 8px;
+
+        .input-control {
+          background: rgba(15, 23, 42, 0.4);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          color: #fff;
+          padding: 14px 16px;
+          border-radius: 10px;
+          font-family: 'Prompt', sans-serif;
           font-size: 15px;
-          color: #0f172a;
-          transition: all 0.2s ease;
-          box-sizing: border-box;
-          background-color: #f8fafc;
+          transition: all 0.3s ease;
         }
-        .input-field:focus {
+
+        .input-control:focus {
           outline: none;
-          border-color: #3b82f6;
-          background-color: #ffffff;
-          box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+          border-color: #38bdf8;
+          background: rgba(15, 23, 42, 0.6);
+          box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
         }
-        textarea.input-field {
+
+        .input-control::placeholder {
+          color: #64748b;
+        }
+
+        textarea.input-control {
           resize: vertical;
           min-height: 80px;
         }
-        /* Radio Button แบบการ์ด */
-        .radio-group {
+
+        .radio-container {
           display: flex;
           gap: 15px;
         }
-        .radio-card {
+
+        .radio-btn {
           flex: 1;
-          border: 2px solid #e2e8f0;
-          border-radius: 8px;
-          padding: 12px;
-          text-align: center;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          font-weight: 600;
-          color: #64748b;
-          background-color: #f8fafc;
+          position: relative;
         }
-        .radio-card input {
+
+        .radio-btn input {
           display: none;
         }
-        .radio-card.active {
-          border-color: #3b82f6;
-          background-color: #eff6ff;
-          color: #1d4ed8;
-        }
-        .radio-card:hover:not(.active) {
-          border-color: #cbd5e1;
-          background-color: #f1f5f9;
-        }
-        /* ลายเซ็น */
-        .signature-section {
-          background-color: #f8fafc;
-          border: 2px dashed #cbd5e1;
-          border-radius: 12px;
-          padding: 20px;
-          margin-bottom: 25px;
-        }
-        .signature-box {
-          background-color: #ffffff;
-          border: 1px solid #e2e8f0;
-          border-radius: 8px;
-          overflow: hidden;
-          margin-top: 10px;
-        }
-        .btn-clear {
-          margin-top: 12px;
-          padding: 8px 16px;
-          background-color: #ffffff;
-          border: 1px solid #cbd5e1;
-          color: #475569;
-          border-radius: 6px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s;
-          font-size: 14px;
-        }
-        .btn-clear:hover {
-          background-color: #f1f5f9;
-          color: #1e293b;
-        }
-        /* ปุ่ม Submit */
-        .btn-submit {
-          width: 100%;
-          padding: 16px;
-          background: linear-gradient(135deg, #2563eb, #1d4ed8);
-          color: #ffffff;
-          border: none;
-          border-radius: 8px;
-          font-size: 18px;
-          font-weight: bold;
+
+        .radio-label {
+          display: block;
+          text-align: center;
+          padding: 14px;
+          background: rgba(15, 23, 42, 0.4);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 10px;
+          color: #94a3b8;
           cursor: pointer;
           transition: all 0.3s ease;
-          box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+          font-weight: 500;
         }
-        .btn-submit:hover:not(:disabled) {
+
+        .radio-btn input:checked + .radio-label {
+          background: rgba(56, 189, 248, 0.15);
+          border-color: #38bdf8;
+          color: #38bdf8;
+          box-shadow: inset 0 0 15px rgba(56, 189, 248, 0.1);
+        }
+
+        .signature-wrapper {
+          background: rgba(255, 255, 255, 0.95);
+          border-radius: 10px;
+          overflow: hidden;
+          margin-top: 5px;
+          border: 2px solid transparent;
+          transition: border-color 0.3s;
+        }
+        
+        .signature-wrapper:hover {
+          border-color: #38bdf8;
+        }
+
+        .btn-clear {
+          background: rgba(255, 255, 255, 0.1);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          color: #e2e8f0;
+          padding: 8px 16px;
+          border-radius: 6px;
+          font-family: 'Prompt', sans-serif;
+          font-size: 13px;
+          cursor: pointer;
+          margin-top: 10px;
+          transition: all 0.2s;
+        }
+
+        .btn-clear:hover {
+          background: rgba(255, 255, 255, 0.2);
+          color: #fff;
+        }
+
+        .submit-btn {
+          width: 100%;
+          padding: 16px;
+          background: linear-gradient(to right, #0ea5e9, #2563eb);
+          color: white;
+          border: none;
+          border-radius: 10px;
+          font-size: 18px;
+          font-weight: 600;
+          font-family: 'Prompt', sans-serif;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          margin-top: 20px;
+          box-shadow: 0 10px 20px -10px rgba(37, 99, 235, 0.5);
+        }
+
+        .submit-btn:hover:not(:disabled) {
           transform: translateY(-2px);
-          box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
+          box-shadow: 0 15px 25px -10px rgba(37, 99, 235, 0.6);
         }
-        .btn-submit:disabled {
-          background: #94a3b8;
+
+        .submit-btn:disabled {
+          background: #475569;
           cursor: not-allowed;
-          transform: none;
           box-shadow: none;
+          transform: none;
         }
-        /* กล่องแจ้งเตือนสำเร็จ */
-        .success-box {
-          background-color: #f0fdf4;
-          border: 1px solid #bbf7d0;
+
+        .success-panel {
+          background: rgba(16, 185, 129, 0.1);
+          border: 1px solid rgba(16, 185, 129, 0.3);
           border-radius: 12px;
-          padding: 25px;
+          padding: 30px;
           text-align: center;
           margin-bottom: 30px;
-          animation: fadeIn 0.5s ease;
+          animation: slideDown 0.5s ease;
         }
-        .success-box h3 {
-          color: #166534;
+
+        .success-panel h2 {
+          color: #34d399;
           margin: 0 0 10px 0;
-          font-size: 20px;
         }
-        .doc-number {
-          color: #15803d;
-          font-size: 32px;
-          font-weight: 900;
-          margin: 10px 0 20px 0;
-          letter-spacing: 1px;
+
+        .doc-no {
+          font-size: 36px;
+          font-weight: 700;
+          color: #fff;
+          margin: 15px 0 25px 0;
+          text-shadow: 0 2px 10px rgba(16, 185, 129, 0.4);
         }
-        .btn-download {
+
+        .download-btn {
           display: inline-block;
-          padding: 12px 24px;
-          background-color: #ef4444;
+          padding: 12px 28px;
+          background: #ef4444;
           color: white;
           text-decoration: none;
           border-radius: 8px;
-          font-weight: bold;
-          transition: all 0.2s;
-          box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.2);
+          font-weight: 500;
+          transition: all 0.3s ease;
         }
-        .btn-download:hover {
-          background-color: #dc2626;
-          transform: translateY(-1px);
+
+        .download-btn:hover {
+          background: #dc2626;
+          box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
         }
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(-10px); }
+
+        @keyframes slideDown {
+          from { opacity: 0; transform: translateY(-20px); }
           to { opacity: 1; transform: translateY(0); }
         }
-        @media (max-width: 600px) {
-          .form-row { flex-direction: column; gap: 20px; }
-          .form-card { padding: 20px; }
+
+        @media (max-width: 768px) {
+          .form-row { flex-direction: column; gap: 0; }
+          .glass-panel { padding: 25px 20px; }
         }
       `}</style>
 
-      <div className="form-card">
+      <div className="glass-panel">
         <div className="header">
-          <h2>📝 แบบขอยอมรับผลิตภัณฑ์แบบมีเงื่อนไข</h2>
-          <p>Conditional Product Acceptance Request - Accept Lot</p>
+          <h1>📝 แบบขอยอมรับผลิตภัณฑ์</h1>
+          <p>Conditional Product Acceptance Request (Accept Lot)</p>
         </div>
 
         {ticketResult && (
-          <div className="success-box">
-            <h3>🎉 บันทึกข้อมูลสำเร็จ!</h3>
-            <p style={{ margin: 0, color: '#166534' }}>เลขที่เอกสารของคุณคือ:</p>
-            <div className="doc-number">{ticketResult.documentNumber}</div>
+          <div className="success-panel">
+            <h2>✨ สร้างเอกสารสำเร็จ!</h2>
+            <p style={{ color: '#cbd5e1' }}>เลขที่เอกสารอ้างอิงของคุณ</p>
+            <div className="doc-no">{ticketResult.documentNumber}</div>
             {ticketResult.pdfUrl && (
-               <a href={ticketResult.pdfUrl} target="_blank" rel="noreferrer" className="btn-download">
-                 📥 เปิดดูไฟล์ PDF พร้อมลายเซ็น
+               <a href={ticketResult.pdfUrl} target="_blank" rel="noreferrer" className="download-btn">
+                 📥 ดาวน์โหลด PDF พร้อมลายเซ็น
                </a>
             )}
           </div>
         )}
 
         <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>🏭 เลือกสายการผลิต (Plant): *</label>
-            <div className="radio-group">
-              <label className={`radio-card ${formData.plant === 'FCB' ? 'active' : ''}`}>
-                <input type="radio" name="plant" value="FCB" checked={formData.plant === 'FCB'} onChange={handleChange} />
-                🏭 FCB (แผ่นไฟเบอร์ซีเมนต์)
-              </label>
-              <label className={`radio-card ${formData.plant === 'CRT' ? 'active' : ''}`}>
-                <input type="radio" name="plant" value="CRT" checked={formData.plant === 'CRT'} onChange={handleChange} />
-                🏠 CRT (กระเบื้องหลังคา)
-              </label>
+          <div className="form-group" style={{ marginBottom: '20px' }}>
+            <label>🏭 สายการผลิต (Plant) *</label>
+            <div className="radio-container">
+              <div className="radio-btn">
+                <input type="radio" id="plantFCB" name="plant" value="FCB" checked={formData.plant === 'FCB'} onChange={handleChange} />
+                <label htmlFor="plantFCB" className="radio-label">🏭 FCB (ไฟเบอร์ซีเมนต์)</label>
+              </div>
+              <div className="radio-btn">
+                <input type="radio" id="plantCRT" name="plant" value="CRT" checked={formData.plant === 'CRT'} onChange={handleChange} />
+                <label htmlFor="plantCRT" className="radio-label">🏠 CRT (กระเบื้องหลังคา)</label>
+              </div>
             </div>
           </div>
 
           <div className="form-row">
             <div className="form-group" style={{ flex: 2 }}>
-              <label>📦 ชื่อผลิตภัณฑ์: *</label>
-              <input type="text" name="productName" value={formData.productName} onChange={handleChange} required className="input-field" placeholder="ระบุชื่อผลิตภัณฑ์" />
+              <label>📦 ชื่อผลิตภัณฑ์ *</label>
+              <input type="text" name="productName" value={formData.productName} onChange={handleChange} required className="input-control" placeholder="ระบุชื่อผลิตภัณฑ์" />
             </div>
             <div className="form-group" style={{ flex: 1 }}>
-              <label>📊 จำนวนที่ร้องขอ: *</label>
-              <input type="number" name="quantity" value={formData.quantity} onChange={handleChange} required className="input-field" placeholder="ระบุจำนวน" />
+              <label>📊 จำนวน (แผ่น/ชิ้น) *</label>
+              <input type="number" name="quantity" value={formData.quantity} onChange={handleChange} required className="input-control" placeholder="ระบุจำนวน" />
             </div>
           </div>
 
           <div className="form-row">
             <div className="form-group">
-              <label>🔢 Lot ผลิต: *</label>
-              <input type="text" name="lotNumber" value={formData.lotNumber} onChange={handleChange} required className="input-field" placeholder="ระบุหมายเลข Lot" />
+              <label>🔢 รหัสผลิต (Lot) *</label>
+              <input type="text" name="lotNumber" value={formData.lotNumber} onChange={handleChange} required className="input-control" placeholder="ระบุหมายเลข Lot" />
             </div>
             <div className="form-group">
-              <label>🏢 หน่วยงานที่ร้องขอ: *</label>
-              <input type="text" name="department" value={formData.department} onChange={handleChange} required className="input-field" placeholder="ระบุหน่วยงาน" />
+              <label>🏢 หน่วยงานที่ร้องขอ *</label>
+              <input type="text" name="department" value={formData.department} onChange={handleChange} required className="input-control" placeholder="ระบุหน่วยงาน" />
             </div>
           </div>
 
-          <div className="form-group">
-            <label>🚫 เหตุผลในการปฏิเสธลอต: *</label>
-            <textarea name="rejectionReason" value={formData.rejectionReason} onChange={handleChange} required className="input-field" placeholder="ระบุเหตุผลที่ลอตนี้ถูกปฏิเสธ..."></textarea>
+          <div className="form-group" style={{ marginBottom: '20px' }}>
+            <label>🚫 เหตุผลในการปฏิเสธลอต *</label>
+            <textarea name="rejectionReason" value={formData.rejectionReason} onChange={handleChange} required className="input-control" placeholder="ระบุเหตุผลที่ QC หรือหน่วยงานปฏิเสธลอตนี้..."></textarea>
+          </div>
+
+          <div className="form-group" style={{ marginBottom: '20px' }}>
+            <label>🎯 รายละเอียดในการร้องขอ (วัตถุประสงค์) *</label>
+            <textarea name="purpose" value={formData.purpose} onChange={handleChange} required className="input-control" placeholder="เช่น เพื่อส่งกระบวนการถัดไป หรือ เพื่อส่งขาย..."></textarea>
+          </div>
+
+          <div className="form-group" style={{ marginBottom: '20px' }}>
+            <label>⚠️ หัวข้อในการร้องขอ (กด Enter เพื่อขึ้นข้อใหม่) *</label>
+            <textarea name="issues" value={formData.issues} onChange={handleChange} required className="input-control" style={{ minHeight: '120px' }} placeholder="ตัวอย่าง:&#10;ความกว้างไม่ได้มาตรฐาน&#10;ความหนาบางจุดไม่ได้ขนาด"></textarea>
+          </div>
+
+          <div className="form-group" style={{ marginBottom: '25px' }}>
+            <label>👤 ชื่อ-นามสกุล ผู้ร้องขอ *</label>
+            <input type="text" name="requesterName" value={formData.requesterName} onChange={handleChange} required className="input-control" placeholder="ระบุชื่อ-นามสกุล" />
           </div>
 
           <div className="form-group">
-            <label>📝 รายละเอียดในการร้องขอ (วัตถุประสงค์): *</label>
-            <textarea name="purpose" value={formData.purpose} onChange={handleChange} required className="input-field" placeholder="เช่น เพื่อส่งกระบวนการถัดไป หรือ เพื่อส่งขาย..."></textarea>
-          </div>
-
-          <div className="form-group">
-            <label>⚠️ หัวข้อในการร้องขอ (กด Enter เพื่อแยกข้อได้): *</label>
-            <textarea name="issues" value={formData.issues} onChange={handleChange} required className="input-field" style={{ minHeight: '120px' }} placeholder="ตัวอย่าง:&#10;ความกว้างไม่ได้มาตรฐาน&#10;ความหนาบางจุดไม่ได้ขนาด"></textarea>
-          </div>
-
-          <div className="form-group">
-            <label>👤 ชื่อ-นามสกุล ผู้ร้องขอ: *</label>
-            <input type="text" name="requesterName" value={formData.requesterName} onChange={handleChange} required className="input-field" placeholder="ระบุชื่อ-นามสกุล" />
-          </div>
-
-          <div className="signature-section">
-            <label>✍️ เซ็นชื่อผู้ร้องขอ (ใช้นิ้วหรือเมาส์เซ็นได้เลย): *</label>
-            <div className="signature-box">
+            <label>✍️ ลายเซ็นผู้ร้องขอ (เซ็นในกรอบสีขาวด้านล่าง) *</label>
+            <div className="signature-wrapper">
               <SignatureCanvas 
                 ref={sigCanvas} 
-                penColor="#1e3a8a" 
-                canvasProps={{ width: 600, height: 180, style: { width: '100%', height: '180px', touchAction: 'none' } }} 
+                penColor="#0f172a" 
+                canvasProps={{ width: 800, height: 200, style: { width: '100%', height: '200px', touchAction: 'none' } }} 
               />
             </div>
-            <button type="button" onClick={clearSignature} className="btn-clear">
-              🧹 ล้างลายเซ็น
-            </button>
+            <div>
+              <button type="button" onClick={clearSignature} className="btn-clear">
+                ↺ ล้างลายเซ็น
+              </button>
+            </div>
           </div>
 
-          <button type="submit" disabled={loading} className="btn-submit">
-            {loading ? '⏳ กำลังสร้างเอกสาร PDF...' : '🚀 ยื่นคำขอยอมรับผลิตภัณฑ์'}
+          <button type="submit" disabled={loading} className="submit-btn">
+            {loading ? 'กำลังประมวลผลเอกสาร...' : 'ส่งคำขอยอมรับผลิตภัณฑ์'}
           </button>
         </form>
       </div>
